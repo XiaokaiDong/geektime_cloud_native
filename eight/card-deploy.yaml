@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cardbill-deployment
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: cardbill
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%  # 发布新版本的时候，先用新版本启动maxSurge比例的POD	
+      maxUnavailable: 25%  # 如果不Ready的POD达到了maxUnavailable，发布升级就停止直到有人介入
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: cardbill
+    spec:
+      affinity:
+        podAntiAffinity:  # 指定是nodeAntiAffinity
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - cardbill
+            topologyKey: kubernetes.io/hostname  # 在节点上寻找特定label的pod
+      containers:
+        - name: cardbill
+          image: cardbill
+          volumeMounts:
+          - mountPath: /app/config   # spring boot应用优先读取jar包所在目录的config子目录下的配置
+            name: config-volume
+            readOnly: true
+          - mountPath: /app/logs     # 日志目录
+            name: log-volume
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 9090
+            initialDelaySeconds: 10
+            failureThreshold: 10
+            timeoutSeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9090
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 5
+          env:
+            - name: cardBillBondPrivatekey
+              valueFrom:
+                secretKeyRef:
+                  name: card-secret
+                  key: cardBillBondPrivatekey
+            - name: cardBillBondPublickey
+              valueFrom:
+                secretKeyRef:
+                  name: card-secret
+                  key: cardBillBondPublickey
+            - name: cardBillBondAesSaltKey
+              valueFrom:
+                secretKeyRef:
+                  name: card-secret
+                  key: cardBillBondAesSaltKey
+            - name: cardBillBondAeskey
+              valueFrom:
+                secretKeyRef:
+                  name: card-secret
+                  key: cardBillBondAeskey
+            - name: cardBillBondVectorKey
+              valueFrom:
+                secretKeyRef:
+                  name: card-secret
+                  key: cardBillBondVectorKey
+          resources:
+            limits:
+              memory: 1.5Gi
+              cpu: 4
+            requests:
+              memory: 1.5Gi
+              cpu: 4
+      volumes:
+      - name: config-volume
+        configMap:
+          name: card-config
+      - name: log-volume
+        emptyDir: {}                 # 使用emptyDir作为日志目录
+      restartPolicy: Always
