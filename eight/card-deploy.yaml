@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: cardbill-deployment
 spec:
-  replicas: 4
+  replicas: 1
   selector:
     matchLabels:
       app: cardbill
@@ -29,7 +29,8 @@ spec:
             topologyKey: kubernetes.io/hostname  # 在节点上寻找特定label的pod
       containers:
         - name: cardbill
-          image: cardbill
+          image: dxktt/cardbill
+          imagePullPolicy: IfNotPresent
           volumeMounts:
           - mountPath: /app/config   # spring boot应用优先读取jar包所在目录的config子目录下的配置
             name: config-volume
@@ -40,15 +41,16 @@ spec:
             httpGet:
               path: /actuator/health/liveness
               port: 9090
-            initialDelaySeconds: 10
-            failureThreshold: 10
+            initialDelaySeconds: 30
+            failureThreshold: 2
             timeoutSeconds: 10
             periodSeconds: 5
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 9090
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
+            failureThreshold: 2
             timeoutSeconds: 10
             periodSeconds: 5
           env:

@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway
+  annotations:
+    kubernetes.io/ingress.class: "nginx"  #当有多个ingress Controller时指定交给NGINX的ingress Controller处理
+spec:
+  tls:
+    - hosts:
+        - example.com
+      secretName: example-tls  #配置TLS服务是，KEY和CERT去这个secret对象里寻找
+  rules:   # 规则
+    - host: example.com  #规则生效的域名
+      http:
+        paths:
+          - path: "/cardBill"
+            pathType: Prefix   # 最终的规则为访问“example.com/cardBill/**”时转发到名为nginx的服务
+            backend:
+              service:
+                name: card-bill
+                port:
+                  number: 80
