@@ -1,0 +1,32 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: myservice
+spec:
+  gateways:
+    - myservice
+  hosts:
+    - myservice.cncamp.io
+  http:
+    - match:
+        - port: 8080
+      route:
+        - destination:
+            host: myservice.default.svc.cluster.local
+            port:
+              number: 8080
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: myservice
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - hosts:
+        - myservice.cncamp.io
+      port:
+        name: myservice
+        number: 8080
+        protocol: HTTP
