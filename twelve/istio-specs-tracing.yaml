@@ -6,15 +6,16 @@ spec:
   gateways:
     - myservice
   hosts:
-    - myservice.cncamp.io
+    - '*'
   http:
-    - match:
-        - port: 8080
-      route:
-        - destination:
-            host: myservice.simple.svc.cluster.local
-            port:
-              number: 8080
+  - match:
+      - uri:
+          exact: /user
+    route:
+      - destination:
+          host: myservice
+          port:
+            number: 8080
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
@@ -25,8 +26,8 @@ spec:
     istio: ingressgateway
   servers:
     - hosts:
-        - myservice.cncamp.io
+        - '*'
       port:
         name: myservice
-        number: 8080
+        number: 80
         protocol: HTTP
